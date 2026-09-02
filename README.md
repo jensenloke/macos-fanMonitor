@@ -1,9 +1,9 @@
 # macOS Fan Monitor (`fm`)
 
 [![docs](https://github.com/jensenloke/macos-fanMonitor/actions/workflows/docs.yml/badge.svg)](https://github.com/jensenloke/macos-fanMonitor/actions/workflows/docs.yml)
-[![license: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![license: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/jensenloke/macos-fanMonitor/blob/main/LICENSE)
 [![platform: macOS](https://img.shields.io/badge/platform-macOS%20(Apple%20Silicon)-black)](#requirements)
-[![python: 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](docs/getting-started.md)
+[![python: 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/getting-started.md)
 [![tui: textual](https://img.shields.io/badge/TUI-textual-8833ff)](https://textual.textualize.io/)
 
 📖 **Full documentation:** <https://jensenloke.github.io/macos-fanMonitor/>
@@ -12,7 +12,7 @@
 > An interactive terminal app that answers that at a glance, without asking an LLM.
 
 A lazygit / yazi-style **Textual** TUI. Runs natively on macOS — **not Docker**
-(see [why](docs/how-it-works.md#the-two-regimes) Docker can't work here).
+(see [why](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/how-it-works.md#the-two-regimes) Docker can't work here).
 
 ```
 ┌ macOS Fan Monitor ────────────────────────── 23:30 · up 18d · 1126 procs ┐
@@ -38,8 +38,8 @@ A lazygit / yazi-style **Textual** TUI. Runs natively on macOS — **not Docker*
 - [Install](#install)
 - [Run & keys](#run)
 - [Data sources](#data-sources-all-read-only)
-- [Documentation](docs/index.md) — getting started, user guide, algorithm, roadmap, and more
-- [Contributing](CONTRIBUTING.md)
+- [Documentation](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/index.md) — getting started, user guide, algorithm, roadmap, and more
+- [Contributing](https://github.com/jensenloke/macos-fanMonitor/blob/main/CONTRIBUTING.md)
 
 ## Requirements
 
@@ -90,7 +90,7 @@ the exact failure mode from the real incidents that motivated this tool.
    `suggestd`, …) — those are symptoms; those get an *advisory* instead.
 
 Full, exact thresholds and the scoring formula:
-[docs → The Algorithm](docs/algorithm.md).
+[docs → The Algorithm](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/algorithm.md).
 
 ## Install
 
@@ -142,7 +142,7 @@ The **Watchdog** tab reads `dev.jensen.watchdog` state (read-only): current
 `fan-activity` probe status (OK / WARN / CRIT), trigger / re-arm thresholds from
 `watchdogs.json`, and recent fan events with their recorded attribution — so you
 can correlate the live verdict against what the watchdog has been logging.
-Details: [docs → Watchdog Integration](docs/watchdog.md).
+Details: [docs → Watchdog Integration](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/watchdog.md).
 
 ## Documentation
 
@@ -155,15 +155,15 @@ make docs             # serve at http://127.0.0.1:8000
 
 | Page | What's in it |
 |---|---|
-| [Getting Started](docs/getting-started.md) | install & first run |
-| [User Guide](docs/user-guide.md) | every screen, tile, and key |
-| [How It Works](docs/how-it-works.md) | the two-regime diagnosis logic |
-| [The Algorithm](docs/algorithm.md) | exact thresholds & scoring |
-| [Watchdog Integration](docs/watchdog.md) | correlating with your watchdog |
-| [Troubleshooting](docs/troubleshooting.md) | common issues |
-| [Roadmap](docs/roadmap.md) | shipped / planned / won't-do |
-| [Contributing](CONTRIBUTING.md) | dev setup, tests, safety rules |
-| [Changelog](docs/changelog.md) | release history |
+| [Getting Started](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/getting-started.md) | install & first run |
+| [User Guide](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/user-guide.md) | every screen, tile, and key |
+| [How It Works](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/how-it-works.md) | the two-regime diagnosis logic |
+| [The Algorithm](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/algorithm.md) | exact thresholds & scoring |
+| [Watchdog Integration](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/watchdog.md) | correlating with your watchdog |
+| [Troubleshooting](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/troubleshooting.md) | common issues |
+| [Roadmap](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/roadmap.md) | shipped / planned / won't-do |
+| [Contributing](https://github.com/jensenloke/macos-fanMonitor/blob/main/CONTRIBUTING.md) | dev setup, tests, safety rules |
+| [Changelog](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/changelog.md) | release history |
 
 ## Development
 
@@ -206,4 +206,4 @@ macOS-fanMonitor/
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/jensenloke/macos-fanMonitor/blob/main/LICENSE).
