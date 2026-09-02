@@ -1,0 +1,80 @@
+/* macOS Fan Monitor — Textual stylesheet */
+
+Screen { background: $surface; }
+
+Header { background: $primary; color: $text; text-style: bold; }
+Footer { background: $primary-background; }
+
+/* ---- stats row -------------------------------------------------- */
+#stats {
+    height: 7;
+    grid-size: 4 1;
+    grid-gutter: 1;
+    padding: 0 1;
+}
+
+.stat {
+    border: round $primary;
+    padding: 0 1;
+    width: 100%;
+}
+
+.stat-title { color: $text-muted; text-style: bold; }
+.stat-sub   { color: $text-disabled; height: 1; }
+
+#fan-val, #temp-val, #load-val, #mem-val {
+    height: 1;
+    text-style: bold;
+}
+
+ProgressBar { padding: 0; height: 1; }
+
+Bar > .bar--bar  { color: $warning; }
+Bar > .bar--full { color: $success; }
+
+/* ---- verdict ---------------------------------------------------- */
+#verdict {
+    height: auto;
+    min-height: 4;
+    max-height: 10;
+    border: round $primary;
+    padding: 0 1;
+    margin: 0 1;
+}
+#verdict.high  { border: tall $error; }
+#verdict.watch { border: tall $warning; }
+#verdict.ok    { border: tall $success; }
+
+/* ---- tabs & tables --------------------------------------------- */
+TabbedContent { height: 1fr; margin: 0 1; }
+
+DataTable { height: 1fr; }
+DataTable > .datatable--header {
+    text-style: bold;
+    background: $primary-background;
+}
+
+#advisories, #procs-caption, #wd-probe {
+    height: auto;
+    color: $text-muted;
+    padding: 0 1;
+}
+
+#recs-table, #proc-table, #wd-table { height: 1fr; }
+
+/* ---- confirm modal --------------------------------------------- */
+ConfirmKill { align: center middle; }
+
+#confirm-box {
+    width: 64;
+    height: auto;
+    padding: 1 2;
+    border: thick $warning;
+    background: $surface;
+}
+
+#confirm-btns { height: 1; margin-top: 1; }
+
+.btn { padding: 0 2; margin-right: 2; }
+.btn.yes { background: $error;   color: $text; }
+.btn.no  { background: $primary; color: $text; }

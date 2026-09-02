@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# macOS Fan Monitor launcher. Resolves through the ~/.local/bin symlink so it
+# finds the project's venv and package no matter where it's invoked from.
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  LINK_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  TARGET="$(readlink "$SOURCE")"
+  case "$TARGET" in
+    /*) SOURCE="$TARGET" ;;
+    *)  SOURCE="$LINK_DIR/$TARGET" ;;
+  esac
+done
+DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+
+PY="$DIR/.venv/bin/python"
+if [[ ! -x "$PY" ]]; then
+  echo "venv missing. Run: $DIR/install.sh" >&2
+  exit 1
+fi
+
+# Allow `python -m fanmon` to work from any working directory.
+export PYTHONPATH="$DIR${PYTHONPATH:+:$PYTHONPATH}"
+exec "$PY" -m fanmon "$@"
