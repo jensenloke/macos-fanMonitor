@@ -95,12 +95,11 @@ Full, exact thresholds and the scoring formula:
 ## Install
 
 ```bash
-git clone https://github.com/jensenloke/macos-fanMonitor
-cd macOS-fanMonitor
-./install.sh          # makes .venv, installs rich+textual, links fm into ~/.local/bin
+pipx install macos-fanmon     # one command; fm lands on your PATH
 ```
 
-Make sure `~/.local/bin` is on your `PATH`.
+(No pipx? `brew install pipx`, or from a clone: `./install.sh` builds a venv
+and links `fm` into `~/.local/bin` — make sure that is on your `PATH`.)
 
 ## Run
 
@@ -181,10 +180,12 @@ sort, and `k` opens the confirm modal from both tables (and declines cleanly).
 
 ```
 macOS-fanMonitor/
-  fm                     # launcher -> .venv/bin/python -m fanmon
+  pyproject.toml         # PyPI packaging: `fm` console script, package data
+  fm                     # launcher -> .venv/bin/python -m fanmon (dev clone)
   Makefile               # run / once / test / docs / docs-build / clean
-  install.sh             # venv + deps + PATH link
-  requirements.txt       # rich, textual
+  install.sh             # venv + deps + PATH link (dev clone)
+  scripts/verify-package.sh  # wheel build + clean-venv install rehearsal
+  requirements.txt       # rich, textual (dev clone)
   requirements-docs.txt  # mkdocs-material
   smoke_test.py          # headless TUI test
   mkdocs.yml             # docs site config
