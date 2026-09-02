@@ -10,16 +10,11 @@ on:
 
 permissions:
   contents: read
-
-# NOTE: Pages deploy is intentionally disabled.
-#   GitHub Pages needs either a paid plan (this repo is private) or the repo set
-#   to public. Once Pages is enabled → set:  gh api -X POST \
-#     repos/OWNER/REPO/pages -f build_type=workflow
-#   then switch `upload-pages-artifact` back to a deploy job using
-#   actions/deploy-pages@v4 and add `pages: write` + `id-token: write` perms.
+  pages: write
+  id-token: write
 
 concurrency:
-  group: docs
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -31,8 +26,18 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements-docs.txt
-      - run: mkdocs build --strict          # quality gate: fails on broken links
-      - uses: actions/upload-artifact@v4     # deployable site/; retained 7 days
+      - run: mkdocs build --strict
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: site
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
