@@ -72,6 +72,9 @@ jobs:
     permissions:
       contents: write   # create the release + attach artifacts
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
