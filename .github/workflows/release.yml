@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify distribution
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Guard tag against package version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          ver="$(python3 -c 'import re,pathlib; print(re.search(r"__version__ = \"([^\"]+)\"", pathlib.Path("fanmon/__init__.py").read_text()).group(1))')"
+          if [[ "$tag" != "v$ver" ]]; then
+            echo "tag $tag does not match package version v$ver" >&2
+            exit 1
+          fi
+
+      - name: Rehearse package install
+        run: bash scripts/verify-package.sh
+
+      - name: Build sdist and wheel
+        run: |
+          rm -rf dist build *.egg-info
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write   # trusted publishing; no API token stored
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
