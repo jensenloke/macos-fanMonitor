@@ -13,12 +13,14 @@ Three boolean flags are computed from a snapshot, then combined.
 | Symbol | Source | 
 |---|---|
 | `cpu_busy` | sum of per-process CPU% (delta), i.e. % of **one** core |
-| `cpu_frac` | `cpu_busy / (cores × 100)` — fraction of **all** cores |
+| `cpu_frac` | `max(cpu_busy / (cores × 100), per-core busy avg)` — fraction of **all** cores; the per-core figure comes from Mach `host_processor_info` |
 | `swap_pct` | swap used / total × 100 |
 | `comp_ratio` | compressor pages *stored* ÷ pages *occupied* |
 | `free_pct` | system-wide RAM free % (`memory_pressure`) |
 | `load1` | 1-minute load average |
-| `fan_duty` | (rpm − min) ÷ (max − min), 0…1 |
+| `fan_duty` | (rpm − min) ÷ (max − min), 0…1; always 0 on a fanless machine |
+| `fanless` | SMC reported zero fans (MacBook Air) |
+| `throttle` | `100 − CPU_Speed_Limit` from `pmset -g therm`; 0 when unthrottled |
 
 ### The three flags
 
@@ -37,8 +39,12 @@ Evaluated top to bottom; the first match wins.
 | 1 | `memory_pressure and cpu_pressure` | Memory pressure + active CPU load | `mixed` | high |
 | 2 | `memory_pressure and load_pressure and not cpu_pressure` | **Swap thrash** — fan from memory pressure | `memory` | high |
 | 3 | `cpu_pressure` | CPU load — `<top>` biggest contributor | `cpu` | watch (<80%) / high |
-| 4 | `fan_duty >= 0.4` | Fan elevated, no clear single cause | `watch` | watch |
-| 5 | otherwise | Nominal | `healthy` | ok |
+| 4 | `throttle >= 10` | **CPU throttled** to `100 − throttle`% — passive cooling can't keep up (Air) / even with the fan | `thermal` | watch (<30%) / high |
+| 5 | `not fanless and fan_duty >= 0.4` | Fan elevated, no clear single cause | `watch` | watch |
+| 6 | otherwise | Nominal | `healthy` | ok |
+
+On a fanless machine the headline wording swaps "fan is spinning" for "your Mac
+is hot"; the logic above is identical.
 
 ??? tip "Why the thresholds?"
     - **`swap_pct ≥ 70`** — past ~70% full, the swap file is contended and paging
@@ -50,6 +56,9 @@ Evaluated top to bottom; the first match wins.
       noise. A single process at `≥ 90`% (≈ one core pinned) also trips it.
     - **`load1 ≥ 0.9 × cores`** — load near core-count means the run queue is
       saturated.
+    - **`throttle ≥ 10`** — macOS trims the clock in small steps first; a
+      sustained 10%+ speed limit means the chassis can't shed heat. On a fanless
+      Air this is the *only* hardware signal that the machine is hot.
 
 ## Scoring the Close list
 

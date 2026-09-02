@@ -39,6 +39,30 @@ processes, kill) still works.
     Point `SMC` in `fanmon/smc.py` at any CLI that prints `fans` / `list -t` in
     the same format. The rest of the app is independent of which binary you use.
 
+## I'm on a MacBook Air — the FAN tile says COOLING
+
+That's correct: an Air has no fan, so `fm` swaps the tile for the CPU speed
+limit from `pmset -g therm`. `CPU speed 100% · not throttled` means the chassis
+is coping; `throttled 28%` means macOS is holding the clock back — the Air's
+version of a fan at full tilt. Use the **CPU** tab to see which cores are pinned
+and the **Memory** tab to see whether you're swapping.
+
+If you have a fan but the tile still says COOLING, the SMC helper reported zero
+fans; run `/Applications/Stats.app/Contents/Resources/smc fans` to check, and
+make sure `FANMON_FANLESS` isn't set in your shell.
+
+## CPU speed shows `—`
+
+`pmset -g therm` returned nothing. It's a stock macOS tool, so this usually
+means a sandboxed or remote shell. Everything else keeps working.
+
+## The ABC boot screen did not appear
+
+Check that you did not launch with `--no-anim` and that `FANMON_NO_ANIM` is not
+set in your shell. The full mark appears during startup at every terminal width;
+after it closes, the community identity remains in the header while all available
+width goes to the four gauges.
+
 ## The screen looks garbled or won't redraw
 
 Textual wants a real terminal (TTY). It won't render when piped/redirected —
@@ -58,8 +82,9 @@ I/O read `0` for one frame, then become real. `--once` handles this with a short
 
 ## "nothing selected" when I press `k`
 
-`k` acts on the focused table. Focus the **Close** or **Processes** table first
-(`tab` moves focus), move the cursor onto a row, then press `k`.
+`k` acts on the focused table. Focus the **Close**, **CPU**, **Memory** or
+**Processes** table first (`tab` moves focus), move the cursor onto a row, then
+press `k`.
 
 ## I killed something by accident
 
@@ -76,6 +101,15 @@ Two possibilities:
    it. Cross-check the **Watchdog** tab for recent events.
 2. **You're seeing a *different* Mac.** `fm` reads the local machine. If you run
    it over SSH on a server, that host has no SMC fan — the tile will be empty.
+
+## I want to see the Air layout on my MacBook Pro
+
+```bash
+FANMON_FANLESS=1 FANMON_THROTTLE=72 fm
+```
+
+`FANMON_FANLESS` hides the fan; `FANMON_THROTTLE` forces the CPU speed limit
+(72 = throttled 28%). The smoke test runs this mode automatically.
 
 ## Load is high but the verdict says "Nominal"
 

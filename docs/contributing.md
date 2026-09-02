@@ -26,12 +26,15 @@ mkdocs.yml             docs site config
 fanmon/
   __main__.py          python -m fanmon entry
   cli.py               arg parsing: default = TUI, --once = snapshot
-  app.py               the Textual App: gauges, tabs, sort, kill
+  app.py               the Textual App: ABC boot, gauges, tabs, sort, kill
   fanmon.tcss          Textual stylesheet
-  engine.py            sampler orchestration → one snapshot dict
-  smc.py               fan + temperature sensors (Stats.app smc)
+  brand.py             ABC palette, wordmark, Textual theme, heat scale
+  engine.py            sampler orchestration → one snapshot dict + histories
+  smc.py               fan (+ fan presence) + temperature sensors (Stats.app smc)
+  cpu.py               per-core busy % via Mach host_processor_info (ctypes)
+  thermal.py           pmset -g therm throttle state
   procs.py             process snapshot, CPU-time delta, classification
-  memory.py            swap / compressor / pressure / load / uptime
+  memory.py            RAM breakdown / swap / compressor / pressure / load / uptime
   regime.py            verdict + recommendation algorithm  ← the brain
   watchdog.py          read-only watchdog log/config parsing
   render.py            rich layout used by --once
@@ -52,11 +55,19 @@ make run                   # same as ./fm
 make test                  # or: ./.venv/bin/python smoke_test.py
 ```
 
-`smoke_test.py` drives the app headless via Textual's `run_test()`: it asserts the
-Close / Processes / Watchdog tables populate, that the `1/2/3` sort keys change
-the sort, and that `k` opens (and cleanly declines) the confirm modal from both
-tables. When you add UI behaviour, **extend the smoke test to cover it** — the
-headless pilot is the closest thing to a real terminal we have in CI.
+`smoke_test.py` drives the app headless via Textual's `run_test()`, twice: once
+as-is and once with `FANMON_FANLESS=1 FANMON_THROTTLE=72` to simulate a
+throttling MacBook Air. It asserts the Close / CPU / Memory / Processes /
+Watchdog tables populate, the FAN tile becomes COOLING when fanless, the ABC
+boot remains visible for at least three seconds, `[` / `]` cycle the tabs, the
+`1/2/3` sort keys change the sort, and `k` opens (and cleanly declines) the
+confirm modal from all four process tables. When you add UI behaviour, **extend
+the smoke test to cover it** — the headless pilot is the closest thing to a real
+terminal we have in CI.
+
+To eyeball the ABC theme without a real terminal, `app.save_screenshot()` inside
+`run_test()` writes an SVG; `rsvg-convert` turns it into the PNGs under
+`docs/assets/`.
 
 ## Documentation
 

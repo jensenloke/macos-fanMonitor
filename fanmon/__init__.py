@@ -1,2 +1,2 @@
-"""macOS Fan Monitor — why is the fan spinning, and what to close."""
-__version__ = "0.1.0"
+"""macOS Fan Monitor — why is my Mac hot, and what to close. Built for the Agentic Builders Collective."""
+__version__ = "0.2.0"

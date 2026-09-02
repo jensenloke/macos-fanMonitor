@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macos-fanmon"
-description = "macOS fan monitor — why is the fan spinning, and what to close."
+description = "macOS fan / CPU / memory monitor — why is my Mac hot, and what to close. Built for the Agentic Builders Collective."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -14,7 +14,7 @@ dependencies = [
     "textual>=0.60",
 ]
 authors = [{ name = "Jensen Loke" }]
-keywords = ["macos", "fan", "monitor", "tui", "textual", "thermal", "diagnostics"]
+keywords = ["macos", "fan", "cpu", "memory", "monitor", "tui", "textual", "thermal", "throttling", "macbook-air", "diagnostics", "agentic-builders"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

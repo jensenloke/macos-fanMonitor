@@ -6,6 +6,7 @@ watchdog uses, so no extra drivers or privileges are needed.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from dataclasses import dataclass, field
@@ -35,14 +36,23 @@ class Fan:
     min_rpm: float = 0.0
     max_rpm: float = 6550.0
     mode: str = "?"
+    # True: a fan was reported. False: the SMC answered "0 fans" (a fanless
+    # MacBook Air). None: no SMC reader available, so we can't tell.
+    present: bool | None = None
 
     @property
     def duty(self) -> float:
         """0..1 fraction of the fan's usable range."""
+        if not self.present:
+            return 0.0
         span = self.max_rpm - self.min_rpm
         if span <= 0:
             return 0.0
         return max(0.0, min(1.0, (self.rpm - self.min_rpm) / span))
+
+    @property
+    def fanless(self) -> bool:
+        return self.present is False
 
 
 @dataclass
@@ -65,10 +75,17 @@ def _run(*args, timeout=6.0) -> str:
 
 def read_fan() -> Fan:
     fan = Fan()
+    # Demo / test hook: FANMON_FANLESS=1 makes a fan machine behave like an Air.
+    if os.environ.get("FANMON_FANLESS"):
+        fan.present = False
+        return fan
     txt = _run("fans")
     for line in txt.splitlines():
         s = line.strip()
-        if s.startswith("Actual speed"):
+        if s.startswith("Number of fans"):
+            fan.present = _num(s) > 0
+        elif s.startswith("Actual speed"):
+            fan.present = True
             fan.rpm = _num(s)
         elif s.startswith("Target speed"):
             fan.target = _num(s)

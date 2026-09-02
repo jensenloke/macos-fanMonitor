@@ -27,12 +27,23 @@ What's shipped, what's planned, and what's deliberately **not** planned.
 | ✅ | Background-worker sampling so the UI never blocks |
 | ✅ | Headless `run_test` smoke test; GitHub Pages docs |
 
+## Shipped (v0.2)
+
+| | Feature |
+|---|---|
+| ✅ | **MacBook Air / fanless** support: COOLING tile, `pmset -g therm` throttle, 🌡️ thermal verdict |
+| ✅ | **CPU tab**: per-core P / E bars, user / sys split, sparkline, top-14 by real CPU |
+| ✅ | **Memory tab**: app / wired / compressed / cached / swap breakdown, page I/O, sparkline, top-14 by RSS |
+| ✅ | In-session **sparklines** for CPU and RAM (was "trend line", planned) |
+| ✅ | **ABC branding**: animated boot, community header, `abc` Textual theme, brand gradient as heat scale |
+| ✅ | `[` / `]` tab cycling; `k` from every process table; Stats.app optional |
+
 ## Planned
 
-### 🔜 In-session trend line
-Persist fan RPM + hottest temp across the session and render a small sparkline,
-so you can see whether you're *heating up* or cooling down rather than reading a
-single instant.
+### 🔜 Heat sparkline
+CPU and RAM sparklines shipped in v0.2. Next: a third one for fan duty (or
+throttle % on an Air) and the hottest sensor, so you can see whether you're
+*heating up* or cooling down.
 
 ### 🔜 Auto-open `fm` on a fan warning
 A hook the watchdog can call to pop `fm` in a new terminal the moment fan RPM
@@ -59,8 +70,10 @@ it SIGTERM'd.
   to warn *before* the fan spins up.
 - 💡 **Optional remote host** — SSH a *snapshot* collector to another Mac and view
   it here (fan/SMC stay local-only; this would be load/swap/processes only).
-- 💡 **Battery/thermal-pressure tile** — surface `pmset -g therm` power-source and
-  thermal-pressure lines alongside the gauges.
+- 💡 **Battery tile** — `pmset -g batt` charge, power source and whether the
+  charger is keeping up under load (Air owners asked).
+- 💡 **Per-process energy impact** — `top -o power` style ranking, the closest
+  thing macOS exposes to "who is heating my Air".
 - 💡 **Threshold-aware notification** — post a macOS notification on regime change
   even while `fm` is closed (would need a lightweight resident mode).
 

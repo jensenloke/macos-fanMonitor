@@ -34,16 +34,29 @@ class Verdict:
     severity: str = "ok"      # "ok" | "watch" | "high"
 
 
-def verdict(procs: list[Proc], mem: dict, fan, temps, load1: float, cores: int) -> Verdict:
+def verdict(procs: list[Proc], mem: dict, fan, temps, load1: float, cores: int,
+            thermal=None, cpu=None) -> Verdict:
+    """Name the active regime.
+
+    `thermal` (pmset throttle state) and `cpu` (per-core utilisation) are
+    optional; with them the verdict works on fanless MacBook Airs, where
+    "the fan is spinning" has no meaning but "macOS is throttling" does.
+    """
     cpu_busy = sum(p.cpu_pct for p in procs)      # % of one core
     capacity = cores * 100.0
     cpu_frac = (cpu_busy / capacity) if capacity else 0.0
+    if cpu is not None and getattr(cpu, "available", False):
+        # Per-core ticks are the more honest capacity measure when present.
+        cpu_frac = max(cpu_frac, cpu.total_pct / 100.0)
 
     swap_pct = mem["swap_used_pct"]
     comp_ratio = mem["comp_ratio"]
     free_pct = mem.get("free_pct")
     free_pct = free_pct if free_pct is not None else 100
+    fanless = bool(fan is not None and getattr(fan, "fanless", False))
     fan_duty = fan.duty if fan else 0.0
+    throttle = thermal.throttle_pct if thermal is not None else 0
+    heat = "your Mac is hot" if fanless else "fan is spinning"
 
     memory_pressure = (
         swap_pct >= 70 or comp_ratio >= 4.0 or free_pct <= 10
@@ -62,7 +75,7 @@ def verdict(procs: list[Proc], mem: dict, fan, temps, load1: float, cores: int) 
     if memory_pressure and load_pressure and not cpu_pressure:
         return Verdict(
             "memory",
-            "Swap thrash - fan is spinning from memory pressure, not CPU",
+            f"Swap thrash - {heat} from memory pressure, not CPU",
             f"Swap {swap_pct:.0f}% used, compressor x{comp_ratio:.1f}, "
             f"load {load1:.1f} on {cores} cores but only {cpu_busy:.0f}% of a "
             f"core busy. Processes are blocked on disk, not computing. "
@@ -78,7 +91,18 @@ def verdict(procs: list[Proc], mem: dict, fan, temps, load1: float, cores: int) 
             f"Top: {top.comm} at {top.cpu_pct:.0f}%.",
             "watch" if cpu_frac < 0.8 else "high",
         )
-    if fan_duty >= 0.4:
+    if throttle >= 10:
+        cooling = ("passive cooling can't keep up" if fanless
+                   else "even with the fan running")
+        return Verdict(
+            "thermal",
+            f"CPU throttled to {100 - throttle}% - {cooling}",
+            f"macOS is holding the CPU clock back {throttle}% (pmset "
+            f"CPU_Speed_Limit). No single hog is computing right now, so the "
+            f"heat is residual; let it cool, or close the largest processes.",
+            "high" if throttle >= 30 else "watch",
+        )
+    if not fanless and fan_duty >= 0.4:
         return Verdict(
             "watch",
             "Fan elevated but no clear single cause",
@@ -86,11 +110,12 @@ def verdict(procs: list[Proc], mem: dict, fan, temps, load1: float, cores: int) 
             f"recent burst; watch the next few samples.",
             "watch",
         )
+    cooling = ("no throttling" if fanless
+               else f"fan {fan_duty*100:.0f}% duty")
     return Verdict(
         "healthy",
         "Nominal - no runaway CPU, no memory thrash",
-        f"Swap {swap_pct:.0f}%, load {load1:.1f}/{cores}, "
-        f"fan {fan_duty*100:.0f}% duty.",
+        f"Swap {swap_pct:.0f}%, load {load1:.1f}/{cores}, {cooling}.",
         "ok",
     )
 

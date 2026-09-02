@@ -1,21 +1,23 @@
 site_name: macOS Fan Monitor
-site_description: Why is my Mac fan spinning, and what should I close? A native terminal app.
+site_description: Why is my Mac hot, and what should I close? A native terminal app for MacBook Pros and fanless Airs, built for the Agentic Builders Collective.
 site_url: https://jensenloke.github.io/macos-fanMonitor/
 repo_url: https://github.com/jensenloke/macos-fanMonitor
 repo_name: jensenloke/macos-fanMonitor
 
 theme:
   name: material
+  logo: assets/abc-logo.png
+  favicon: assets/abc-logo.png
   palette:
     - scheme: slate
       primary: black
-      accent: orange
+      accent: deep orange
       toggle:
         icon: material/weather-night
         name: Switch to light mode
     - scheme: default
       primary: black
-      accent: orange
+      accent: deep orange
       toggle:
         icon: material/weather-sunny
         name: Switch to dark mode
@@ -33,6 +35,9 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/jensenloke
+    - icon: material/account-group
+      link: https://www.agenticbuilders.sg/
+      name: Agentic Builders Collective
 
 markdown_extensions:
   - admonition

@@ -58,10 +58,12 @@ Every refresh, `engine.Engine` assembles one **snapshot** by reading:
 
 | Source | What it gives you |
 |---|---|
-| `smc` (via Stats.app) | fan RPM, target, range; all temperature sensors |
+| `smc` (via Stats.app, optional) | fan count, RPM, target, range; all temperature sensors |
+| `pmset -g therm` | CPU speed limit — how much macOS is throttling |
+| Mach `host_processor_info` | per-core user / system / idle ticks (ctypes, no sudo) |
 | `ps -axww` | PID, PPID, RSS, age, cumulative CPU time, full command line |
-| `vm_stat` | free/wired pages, compressor stored vs occupied, page-in/out counters |
-| `sysctl` | `vm.swapusage`, `vm.loadavg`, `hw.ncpu`, `kern.boottime` |
+| `vm_stat` | free / wired / anonymous / file-backed pages, compressor stored vs occupied, page-in/out counters |
+| `sysctl` | `vm.swapusage`, `vm.loadavg`, `hw.ncpu`, `hw.memsize`, `hw.perflevel*.logicalcpu`, `kern.boottime` |
 | `memory_pressure` | system-wide RAM free % |
 | `~/watchdogs/…` | fan-event log + probe status (read-only) |
 

@@ -19,6 +19,8 @@ def _sh(cmd: str, timeout=10.0) -> str:
 class MemorySampler:
     def __init__(self):
         self._prev_io = None  # (pageins, pageouts)
+        self._prev_t = None
+        self.total_gb = _memsize_gb()
 
     def sample(self) -> dict:
         swap_t, swap_u, swap_f = self._swap()
@@ -27,7 +29,20 @@ class MemorySampler:
         io_rate = self._io_rate(vm)
         occupied = vm.get("occupied", 0)
         stored = vm.get("stored", 0)
+        gb = lambda pages: pages * PAGE / 2**30
+        # Activity Monitor's breakdown: App = anonymous - purgeable,
+        # Cached files = file-backed + purgeable, Used = app + wired + compressed.
+        app_gb = gb(max(0, vm.get("anon", 0) - vm.get("purgeable", 0)))
+        wired_gb = gb(vm.get("wired", 0))
+        comp_gb = gb(occupied)
+        cached_gb = gb(vm.get("filebacked", 0) + vm.get("purgeable", 0))
+        used_gb = app_gb + wired_gb + comp_gb
         return {
+            "total_gb": self.total_gb,
+            "app_gb": app_gb,
+            "cached_gb": cached_gb,
+            "used_gb": used_gb,
+            "used_pct": (used_gb / self.total_gb * 100.0) if self.total_gb else 0.0,
             "swap_total_gb": swap_t,
             "swap_used_gb": swap_u,
             "swap_free_gb": swap_f,
@@ -64,6 +79,9 @@ class MemorySampler:
             "occupied": grab("Pages occupied by compressor"),
             "pageins": grab("Pageins"),
             "pageouts": grab("Pageouts"),
+            "anon": grab("Anonymous pages"),
+            "filebacked": grab("File-backed pages"),
+            "purgeable": grab("Pages purgeable"),
         }
 
     def _pressure_free(self):
@@ -72,15 +90,28 @@ class MemorySampler:
         return int(m.group(1)) if m else None
 
     def _io_rate(self, vm):
+        """(pageins/s, pageouts/s) over the sampling window."""
+        import time
+        now = time.time()
         cur = (vm.get("pageins", 0), vm.get("pageouts", 0))
-        rate = (0, 0)
-        if self._prev_io is not None:
+        rate = (0.0, 0.0)
+        if self._prev_io is not None and self._prev_t:
+            dt = max(0.1, now - self._prev_t)
             rate = (
-                max(0, cur[0] - self._prev_io[0]),
-                max(0, cur[1] - self._prev_io[1]),
+                max(0, cur[0] - self._prev_io[0]) / dt,
+                max(0, cur[1] - self._prev_io[1]) / dt,
             )
         self._prev_io = cur
+        self._prev_t = now
         return rate
+
+
+def _memsize_gb() -> float:
+    out = _sh("sysctl -n hw.memsize").strip()
+    try:
+        return int(out) / 2**30
+    except ValueError:
+        return 0.0
 
 
 def load_avg() -> tuple:

@@ -1,66 +1,88 @@
-/* macOS Fan Monitor — Textual stylesheet */
+/* macOS Fan Monitor — Textual stylesheet.
+   Colours come from the "abc" theme registered in app.py (fanmon/brand.py):
+   $primary = peach, $secondary = salmon, $accent = coral, $success = sage. */
 
-Screen { background: $surface; }
+Screen { background: $background; }
 
-Header { background: $primary; color: $text; text-style: bold; }
-Footer { background: $primary-background; }
+Header {
+    background: $surface;
+    color: $primary;
+    text-style: bold;
+}
+Header > HeaderTitle { color: $primary; }
+Footer { background: $background; }
 
-/* ---- stats row -------------------------------------------------- */
+/* ---- stats row: four gauges ------------------------------------ */
 #stats {
-    height: 7;
+    height: 8;
     grid-size: 4 1;
+    grid-columns: 1fr 1fr 1fr 1fr;
     grid-gutter: 1;
     padding: 0 1;
 }
 
 .stat {
-    border: round $primary;
+    border: round $secondary 40%;
     padding: 0 1;
     width: 100%;
 }
 
-.stat-title { color: $text-muted; text-style: bold; }
-.stat-sub   { color: $text-disabled; height: 1; }
+.stat-title { color: $secondary; text-style: bold; }
+.stat-sub   { color: $text-muted; height: 1; }
 
-#fan-val, #temp-val, #load-val, #mem-val {
+#fan-val, #temp-val, #cpu-val, #mem-val {
     height: 1;
     text-style: bold;
 }
+#cpu-cores { height: 1; }
 
 ProgressBar { padding: 0; height: 1; }
-
-Bar > .bar--bar  { color: $warning; }
-Bar > .bar--full { color: $success; }
+Bar > .bar--bar  { color: $primary; }
+Bar > .bar--full { color: $accent; }
+Bar > .bar--complete { color: $accent; }
 
 /* ---- verdict ---------------------------------------------------- */
 #verdict {
     height: auto;
     min-height: 4;
     max-height: 10;
-    border: round $primary;
+    border: round $secondary 40%;
     padding: 0 1;
     margin: 0 1;
 }
-#verdict.high  { border: tall $error; }
-#verdict.watch { border: tall $warning; }
-#verdict.ok    { border: tall $success; }
+#verdict.high  { border: round $accent; }
+#verdict.watch { border: round $primary; }
+#verdict.ok    { border: round $success; }
 
 /* ---- tabs & tables --------------------------------------------- */
 TabbedContent { height: 1fr; margin: 0 1; }
+Tabs { color: $text-muted; }
+Underline > .underline--bar { color: $accent; }
 
 DataTable { height: 1fr; }
 DataTable > .datatable--header {
     text-style: bold;
-    background: $primary-background;
+    color: $secondary;
+    background: $surface;
+}
+DataTable > .datatable--cursor {
+    background: $secondary 25%;
+    color: $text;
 }
 
-#advisories, #procs-caption, #wd-probe {
+.caption {
     height: auto;
     color: $text-muted;
     padding: 0 1;
 }
 
-#recs-table, #proc-table, #wd-table { height: 1fr; }
+#cpu-core-bars, #mem-break { height: auto; padding: 0 1; }
+
+Sparkline { height: 2; margin: 0 1; }
+Sparkline > .sparkline--max-color { color: $accent; }
+Sparkline > .sparkline--min-color { color: $primary 35%; }
+
+#recs-table, #proc-table, #wd-table, #cpu-table, #mem-table { height: 1fr; }
 
 /* ---- confirm modal --------------------------------------------- */
 ConfirmKill { align: center middle; }
@@ -69,12 +91,12 @@ ConfirmKill { align: center middle; }
     width: 64;
     height: auto;
     padding: 1 2;
-    border: thick $warning;
+    border: thick $primary;
     background: $surface;
 }
 
 #confirm-btns { height: 1; margin-top: 1; }
 
 .btn { padding: 0 2; margin-right: 2; }
-.btn.yes { background: $error;   color: $text; }
-.btn.no  { background: $primary; color: $text; }
+.btn.yes { background: $accent;  color: $background; text-style: bold; }
+.btn.no  { background: $panel;   color: $text; }
