@@ -6,6 +6,9 @@ __pycache__/
 # Virtual env
 .venv/
 
+# MkDocs build output
+site/
+
 # OS / editor noise
 .DS_Store
 *.log
