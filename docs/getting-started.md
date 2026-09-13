@@ -7,7 +7,7 @@ Get `fm` running on your Mac in under a minute.
 | Requirement | Notes |
 |---|---|
 | **macOS** on Apple Silicon | Tested on an M4 MacBook Pro; the fanless layout is simulated with `FANMON_FANLESS=1`. Intel Macs are untested. |
-| **Python 3.10+** | `python3 --version`. The app uses modern syntax (`X | None`). |
+| **Python 3.11+** | `python3 --version`. The app uses modern syntax (`X | None`). |
 | **Stats.app** *(optional)* | A free menu-bar system monitor. `fm` reuses its read-only SMC helper to read fan RPM and temperatures — no extra drivers or `sudo`. Without it the FAN and TEMP tiles are blank; CPU, memory, throttle, processes and the verdict all work. |
 
 !!! tip "MacBook Air owners"

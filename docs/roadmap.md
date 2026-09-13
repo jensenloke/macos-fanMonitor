@@ -38,6 +38,18 @@ What's shipped, what's planned, and what's deliberately **not** planned.
 | ✅ | **ABC branding**: animated boot, community header, `abc` Textual theme, brand gradient as heat scale |
 | ✅ | `[` / `]` tab cycling; `k` from every process table; Stats.app optional |
 
+## Shipped (v0.3)
+
+| | Feature |
+|---|---|
+| ✅ | **AI harness (opt-in)**: AI tab, `a` consult, `A` setup wizard, follow-up input |
+| ✅ | OpenAI-compatible provider with native tool calling (stdlib urllib) |
+| ✅ | Read-only agent tools: proc_detail, process_tree, resample, recent_logs, thermal_state, watchdog_events |
+| ✅ | Threshold triggers with cooldown + 85% re-arm hysteresis (fan, throttle, mem, swap, high-severity streak) |
+| ✅ | Privacy packet: `comm` + category only — full argv is never sent |
+| ✅ | Recommend-only: AI close actions validate to closeable pids and land as rows the user confirms via `k` |
+| ✅ | `fm --once --ai [--ask "…"]` CLI consult; `~/.config/macos-fanMonitor/config.toml` |
+
 ## Planned
 
 ### 🔜 Heat sparkline

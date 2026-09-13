@@ -21,6 +21,7 @@ async def run_once(fanless: bool) -> bool:
         os.environ.pop("FANMON_FANLESS", None)
         os.environ.pop("FANMON_THROTTLE", None)
         os.environ.pop("FANMON_NO_ANIM", None)
+    os.environ["FANMON_AI_CONFIG"] = "/tmp/fm-nonexistent-ai-config.toml"
     print(f"=== mode: {'fanless (Air)' if fanless else 'fan'} ===")
 
     app = FanMonitorApp(interval=1.0)
@@ -73,6 +74,20 @@ async def run_once(fanless: bool) -> bool:
         await pilot.press("left_square_bracket")
         await pilot.pause(0.3)
         assert tabs.active == "tab-close"
+
+        # ] reaches the AI tab; `a` on an unconfigured app shows the hint
+        for _ in range(5):
+            await pilot.press("right_square_bracket")
+            await pilot.pause(0.15)
+        print("tab after 5x ']':", tabs.active)
+        assert tabs.active == "tab-ai"
+        await pilot.press("a")
+        await pilot.pause(0.4)
+        ai_status = _plain(app.query_one("#ai-status"))
+        print("ai status:", ai_status)
+        assert "not configured" in ai_status
+        await pilot.press("left_square_bracket")
+        await pilot.pause(0.2)
 
         # sort keys change the process sort instantly
         await pilot.press("2")

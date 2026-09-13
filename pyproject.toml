@@ -7,7 +7,7 @@ name = "macos-fanmon"
 description = "macOS fan / CPU / memory monitor — why is my Mac hot, and what to close. Built for the Agentic Builders Collective."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = [
     "rich>=13.0",

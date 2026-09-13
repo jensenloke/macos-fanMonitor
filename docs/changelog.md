@@ -6,7 +6,33 @@ All notable changes to `fm` are documented here. The format follows
 
 ## [Unreleased]
 
-_No pending changes._
+### Added
+
+- **AI harness (opt-in)** — a new **AI** tab consults an OpenAI-compatible
+  chat model with a read-only tool loop (proc_detail, process_tree, resample,
+  recent_logs, thermal_state, watchdog_events). `a` asks on the latest
+  snapshot, `A` opens a setup wizard that detects providers from
+  `~/.omp/agent/models.yml`, and an inline input takes follow-up questions.
+- **Threshold triggers** — fan duty, CPU throttle, memory and swap %, or a
+  streak of `high` verdicts can auto-start a consult; each rule fires once,
+  then cools down and must drop below 85% of threshold to re-arm.
+- **`fm --once --ai [--ask "question"]`** — prints the deterministic snapshot
+  followed by an AI diagnosis panel.
+- Config file `~/.config/macos-fanMonitor/config.toml` (override with
+  `FANMON_AI_CONFIG`). The API key is never stored — `key_source` points at an
+  omp provider or an env var.
+- `make test-unit` — stdlib unittest suite for the AI harness.
+
+### Privacy & safety
+
+- The snapshot packet sends `comm` + category only — never a full command line.
+- The AI recommends only: `close` actions are validated against closeable,
+  non-system pids and appear as rows the user confirms via the existing
+  `k` → confirm → `SIGTERM` path.
+
+### Changed
+
+- Requires Python **3.11+** (stdlib `tomllib`).
 
 ## [0.2.0] — 2026-09-02
 

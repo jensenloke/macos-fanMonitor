@@ -8,14 +8,15 @@
 [![PyPI](https://img.shields.io/pypi/v/macos-fanmon?color=F5A86B)](https://pypi.org/project/macos-fanmon/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/jensenloke/macos-fanMonitor/blob/main/LICENSE)
 [![platform: macOS](https://img.shields.io/badge/platform-macOS%20(Apple%20Silicon)-black)](#requirements)
-[![python: 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/getting-started.md)
+[![python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/getting-started.md)
 [![built for ABC](https://img.shields.io/badge/built%20for-agentic%20builders%20collective-E86F5E)](https://www.agenticbuilders.sg/)
 
 📖 **Full documentation:** <https://jensenloke.github.io/macos-fanMonitor/>
 
 > **Why is my Mac hot — and what should I close?**
 > A terminal app that answers that at a glance, for MacBook Pros *and* fanless
-> MacBook Airs, without asking an LLM.
+> MacBook Airs. The deterministic verdict needs no LLM; an opt-in AI harness
+> can give a second opinion when you want one.
 
 Built for the members of the **[Agentic Builders Collective](https://www.agenticbuilders.sg/)**
 (ABC) — a 1,000+ strong community of people who run AI agents on their Macs all
@@ -125,7 +126,7 @@ Full, exact thresholds and the scoring formula:
 ## Requirements
 
 - **macOS** on Apple Silicon (Intel untested; per-core labels fall back to `C0…`)
-- **Python 3.10+**
+- **Python 3.11+**
 - **[Stats.app](https://github.com/exelban/stats)** — *optional.* `fm` reuses its
   read-only SMC helper for fan RPM and temperatures. Without it those two tiles
   are blank; CPU, memory, throttle, processes and the verdict still work.
@@ -157,6 +158,11 @@ fm --no-anim          # skip the animated ABC boot screen
 | `[` / `]` | previous / next tab |
 | `1` / `2` / `3` | sort Processes by CPU / memory / age |
 | `k` | **SIGTERM the selected row** (asks to confirm first) |
+| `a` | **Ask AI** — consult the AI harness on the latest snapshot |
+| `A` | AI setup wizard |
+| `space` (AI tab) | toggle a `close` action for batch kill |
+| `enter` (AI tab) | toggle `close` rows · run `investigate`/`wait` rows · pick a follow-up |
+| `k` (AI tab) | kill toggled actions as one confirmed batch (or the highlighted row) |
 | `tab` | move focus between panes |
 
 `k` re-checks each PID is still alive before sending `SIGTERM`, and shows a
@@ -197,6 +203,18 @@ The **Watchdog** tab reads `dev.jensen.watchdog` state (read-only): current
 can correlate the live verdict against what the watchdog has been logging.
 Details: [docs → Watchdog Integration](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/watchdog.md).
 
+## AI harness (opt-in)
+
+Off by default — with no config file `fm` behaves exactly as before. Press `A`
+to run the setup wizard (it detects providers from `~/.omp/agent/models.yml`,
+e.g. your `dgx` endpoint, and writes `~/.config/macos-fanMonitor/config.toml`).
+Then `a` consults an OpenAI-compatible chat model with a read-only tool loop;
+threshold triggers (fan duty, throttle, memory, swap, consecutive `high`
+verdicts) can auto-consult too. The AI only ever *recommends*: close actions
+land as rows you select and confirm through the same `k` → confirm → `SIGTERM`
+path. `fm --once --ai [--ask "question"]` prints the snapshot plus the
+diagnosis. Privacy and details: [docs → AI harness](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/ai.md).
+
 ## Documentation
 
 The full site is built from `docs/` and published to GitHub Pages. Browse
@@ -213,6 +231,7 @@ make docs             # serve at http://127.0.0.1:8000
 | [How It Works](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/how-it-works.md) | the two-regime diagnosis logic |
 | [The Algorithm](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/algorithm.md) | exact thresholds & scoring |
 | [Watchdog Integration](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/watchdog.md) | correlating with your watchdog |
+| [AI harness](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/ai.md) | opt-in LLM second opinion — setup, privacy, triggers |
 | [Troubleshooting](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/troubleshooting.md) | common issues, MacBook Air notes |
 | [Roadmap](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/roadmap.md) | shipped / planned / won't-do |
 | [Contributing](https://github.com/jensenloke/macos-fanMonitor/blob/main/CONTRIBUTING.md) | dev setup, tests, safety rules |
@@ -222,6 +241,7 @@ make docs             # serve at http://127.0.0.1:8000
 
 ```bash
 make test             # headless TUI smoke test (Textual run_test pilot), fan + fanless
+make test-unit        # unit tests for the AI harness (stdlib unittest)
 make docs-build       # strict docs build (what CI runs)
 ```
 

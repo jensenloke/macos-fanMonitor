@@ -20,6 +20,9 @@ once:
 test:
 	@$(PY) smoke_test.py
 
+test-unit:
+	@$(PY) -m unittest discover -s tests
+
 docs:
 	@$(VENV)/bin/mkdocs serve
 

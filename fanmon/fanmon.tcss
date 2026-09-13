@@ -100,3 +100,27 @@ ConfirmKill { align: center middle; }
 .btn { padding: 0 2; margin-right: 2; }
 .btn.yes { background: $accent;  color: $background; text-style: bold; }
 .btn.no  { background: $panel;   color: $text; }
+
+/* ---- AI tab ---------------------------------------------------- */
+#ai-status { height: auto; padding: 0 1; }
+
+#ai-diagnosis {
+    height: auto;
+    min-height: 3;
+    max-height: 9;
+    border: round $secondary 40%;
+    padding: 0 1;
+    margin: 0 1;
+}
+
+#ai-actions { height: auto; max-height: 10; margin: 0 1; }
+#ai-why { height: auto; max-height: 3; padding: 0 1; }
+#ai-diagnosis.stale { color: $text-muted; }
+#ai-diagnosis.stale * { color: $text-muted; }
+#ai-followups { height: auto; max-height: 4; margin: 0 1; }
+#ai-input { margin: 0 1; }
+
+AiSetup { align: center middle; }
+AiSetup #confirm-box { width: 76; max-height: 90%; }
+AiSetup Label { color: $text-muted; margin-top: 1; }
+AiSetup Input { margin: 0; }

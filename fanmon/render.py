@@ -224,6 +224,37 @@ def _watchdog_panel(snap) -> Panel:
     return Panel(t, title="Watchdog fan history", border_style=_BORDER, expand=True)
 
 
+def ai_panel(d, cfg) -> Panel:
+    """The AI diagnosis for `fm --once --ai`."""
+    body = Text()
+    if d.error:
+        body.append(f"AI consult failed: {d.error}\n", style=brand.CORAL)
+    body.append(d.text or "(no diagnosis)", style=f"bold {brand.MIST}")
+    parts = [body]
+    if d.actions:
+        t = Table(box=box.SIMPLE_HEAVY, expand=True, pad_edge=False)
+        t.add_column("#", style=brand.MUTED, width=2)
+        t.add_column("type", width=11)
+        t.add_column("target", overflow="fold")
+        t.add_column("PIDs", overflow="fold")
+        t.add_column("why", overflow="fold")
+        for i, a in enumerate(d.actions, 1):
+            t.add_row(str(i), a.type, a.label,
+                      ", ".join(map(str, a.pids[:8])) or "—",
+                      Text(a.why, style=brand.MUTED))
+        parts.append(t)
+    for note in d.dropped:
+        parts.append(Text(f"dropped: {note}", style=brand.MUTED))
+    if d.follow_ups:
+        parts.append(Text("follow-ups: " + " · ".join(d.follow_ups[:3]),
+                          style=brand.MUTED))
+    sub = (f"{cfg.provider} · {cfg.model} · {d.elapsed_s:.0f}s · "
+           f"tools: {', '.join(d.tool_calls_made) or 'none'} · "
+           f"confidence {d.confidence:.0%} · recommends only — you confirm")
+    return Panel(Group(*parts), title="AI second opinion",
+                 border_style=brand.PEACH, subtitle=sub, expand=True)
+
+
 def build(snap) -> Group:
     top_cpu = _top_table(snap["procs"], key=lambda p: p.cpu_pct,
                          title="Top CPU (real delta)", color=brand.CORAL)

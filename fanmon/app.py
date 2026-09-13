@@ -30,22 +30,25 @@ from textual.binding import Binding
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.widgets import (
-    DataTable, Footer, Header, Label, ProgressBar, Sparkline, Static,
-    TabbedContent, TabPane,
+    DataTable, Footer, Header, Input, Label, OptionList, ProgressBar,
+    RadioButton, RadioSet, Sparkline, Static, TabbedContent, TabPane,
 )
+from textual.widgets.option_list import Option
 from textual.worker import Worker, WorkerState
 
 from . import brand
 from .engine import Engine
 from .procs import Proc
 from .regime import Rec
+from .ai import config as ai_config
 
 
 _KIND_ICON = {"memory": "💾", "cpu": "🔥", "mixed": "🔀", "watch": "👀",
               "thermal": "🌡️", "healthy": "✅"}
 _TOP_N_PROCS = 80
 _TOP_N_TAB = 14
-_TABS = ["tab-close", "tab-cpu", "tab-mem", "tab-procs", "tab-watchdog"]
+_TABS = ["tab-close", "tab-cpu", "tab-mem", "tab-procs", "tab-watchdog",
+         "tab-ai"]
 _BOOT_MIN_SECONDS = 3.0
 _SPARK = "▁▂▃▄▅▆▇█"
 
@@ -153,6 +156,102 @@ class ConfirmKill(ModalScreen[bool]):
         self.dismiss(False)
 
 
+# --- AI setup wizard --------------------------------------------------------
+
+class AiSetup(ModalScreen[bool]):
+    BINDINGS = [
+        Binding("s", "save", "Save", show=True),
+        Binding("escape", "cancel", "Cancel", show=True),
+    ]
+
+    def __init__(self, cfg: ai_config.AiConfig | None):
+        super().__init__()
+        self.cfg = cfg or ai_config.AiConfig()
+        self.providers = ai_config.omp_providers()
+
+    def compose(self) -> ComposeResult:
+        cfg = self.cfg
+        with Vertical(id="confirm-box"):
+            yield Static(Text("AI harness setup", style=f"bold {brand.PEACH}"))
+            yield Static("provider from ~/.omp/agent/models.yml:",
+                         classes="dim")
+            with RadioSet(id="ai-providers"):
+                for i, name in enumerate(self.providers):
+                    p = self.providers[name]
+                    yield RadioButton(
+                        f"omp:{name}  {p['base_url']}",
+                        value=(f"omp:{name}" == cfg.key_source)
+                        or (i == 0 and not cfg.key_source),
+                    )
+                yield RadioButton(
+                    "manual / env var",
+                    value=bool(cfg.key_source)
+                    and not cfg.key_source.startswith("omp:"))
+            yield Label("base url")
+            yield Input(cfg.base_url, id="ai-base-url")
+            yield Label("model")
+            yield Input(cfg.model, id="ai-model")
+            yield Label("key source (omp:<name> or env:<VAR>)")
+            yield Input(cfg.key_source, id="ai-key-source")
+            yield Label("triggers: fan% throttle% mem% swap% high-streak")
+            trig = cfg.triggers
+            yield Input(
+                f"{trig.fan_duty_pct} {trig.throttle_pct} "
+                f"{trig.mem_used_pct} {trig.swap_used_pct} "
+                f"{trig.high_severity_samples}", id="ai-triggers")
+            with Horizontal(id="confirm-btns"):
+                yield Static("[s] save & enable", classes="btn yes")
+                yield Static("[esc] cancel", classes="btn no")
+
+    def on_mount(self) -> None:
+        # Prefill from the detected omp provider when fields are empty.
+        self._apply_provider(prefill_only=True)
+
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        self._apply_provider()
+
+    def _apply_provider(self, prefill_only: bool = False) -> None:
+        rs = self.query_one("#ai-providers", RadioSet)
+        idx = rs.pressed_index
+        names = list(self.providers)
+        if idx is None or idx < 0 or idx >= len(names):
+            return
+        name = names[idx]
+        p = self.providers[name]
+        base = self.query_one("#ai-base-url", Input)
+        model = self.query_one("#ai-model", Input)
+        key = self.query_one("#ai-key-source", Input)
+        if prefill_only and base.value:
+            return
+        base.value = p["base_url"]
+        if p["models"]:
+            model.value = p["models"][0]
+        key.value = f"omp:{name}"
+
+    def action_save(self) -> None:
+        cfg = ai_config.AiConfig()
+        cfg.base_url = self.query_one("#ai-base-url", Input).value.strip()
+        cfg.model = self.query_one("#ai-model", Input).value.strip()
+        cfg.key_source = self.query_one("#ai-key-source", Input).value.strip()
+        parts = self.query_one("#ai-triggers", Input).value.split()
+        try:
+            nums = [int(x) for x in parts[:5]]
+            for k, v in zip(("fan_duty_pct", "throttle_pct", "mem_used_pct",
+                             "swap_used_pct", "high_severity_samples"), nums):
+                setattr(cfg.triggers, k, v)
+        except ValueError:
+            pass
+        cfg.enabled = True
+        ai_config.save(cfg)
+        self.dismiss(True)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.action_save()
+
+    def action_cancel(self) -> None:
+        self.dismiss(False)
+
+
 # --- the app --------------------------------------------------------------
 
 class FanMonitorApp(App):
@@ -171,6 +270,9 @@ class FanMonitorApp(App):
         Binding("2", "sort_mem", "Sort Mem", show=True),
         Binding("3", "sort_age", "Sort Age", show=True),
         Binding("k", "kill_selected", "Kill selected", show=True),
+        Binding("a", "ask_ai", "Ask AI", show=True),
+        Binding("A", "ai_setup", "AI setup", show=True),
+        Binding("space", "ai_toggle", "Toggle AI action", show=False),
     ]
 
     def __init__(self, interval: float = 2.0, animate: bool = True):
@@ -186,6 +288,24 @@ class FanMonitorApp(App):
         self._boot_started = 0.0
         self._pending_snapshot: dict | None = None
         self._refresh_timer = None
+        self._ai_cfg: ai_config.AiConfig | None = ai_config.load()
+        self._ai_history: list = []
+        self._ai_trigger = None
+        if self._ai_cfg and self._ai_cfg.enabled:
+            from .ai.triggers import TriggerMonitor
+            self._ai_trigger = TriggerMonitor(self._ai_cfg)
+        self._ai_busy = False
+        self._ai_snap: dict | None = None
+        self._ai_started = 0.0
+        self._ai_last = ""
+        self._ai_last_tool = ""
+        self._ai_timer = None
+        self._ai_kind = "asking"
+        self._ai_actions: list = []         # AiAction per table row
+        self._ai_toggled: set[int] = set()  # toggled row indices
+        self._ai_verify_pending = None      # (label, sent_count) after AI kill
+        self._pending_kill = None           # (label, pids) awaiting confirm
+        self._kill_origin_ai = False
 
     # -- compose ------------------------------------------------------------
 
@@ -243,6 +363,14 @@ class FanMonitorApp(App):
                     Static("", id="wd-probe", classes="caption"),
                     DataTable(id="wd-table"),
                 )
+            with TabPane("AI", id="tab-ai"):
+                yield Static("", id="ai-status", classes="caption")
+                yield Static("", id="ai-diagnosis")
+                yield DataTable(id="ai-actions")
+                yield Static("", id="ai-why", classes="caption")
+                yield OptionList(id="ai-followups")
+                yield Input(placeholder="ask a follow-up… (enter)",
+                            id="ai-input")
         yield Footer()
 
     # -- lifecycle ----------------------------------------------------------
@@ -293,6 +421,13 @@ class FanMonitorApp(App):
         wd.cursor_type = "row"
         wd.add_columns("when", "state", "RPM", "attribution")
 
+        ai = self.query_one("#ai-actions", DataTable)
+        ai.cursor_type = "row"
+        self._ai_col_keys = ai.add_columns("#", "✓", "type", "target",
+                                           "PIDs", "why")
+        self._ai_status_idle()
+        self.query_one("#ai-followups", OptionList).display = False
+
     # -- refresh worker -----------------------------------------------------
 
     def _spawn_refresh(self, initial: bool = False) -> None:
@@ -308,6 +443,9 @@ class FanMonitorApp(App):
         return self.engine.snapshot()
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        if event.worker.group == "ai":
+            self._ai_worker_done(event)
+            return
         if event.worker.group != "sample":
             return
         if event.state == WorkerState.SUCCESS:
@@ -336,6 +474,15 @@ class FanMonitorApp(App):
         self._render_proc_table()
         self._update_watchdog(snap)
         self.sub_title = snap["header_sub"]
+        self._ai_snap = snap
+        self._maybe_verify()
+        if self._ai_trigger is not None and not self._ai_busy:
+            reason = self._ai_trigger.update(snap)
+            if reason:
+                self.notify(f"AI consult triggered: {reason}",
+                            severity="information")
+                self._consult(None, trigger=reason,
+                              kind=f"trigger: {reason}")
 
     def _update_stats(self, snap: dict) -> None:
         fan, temps, mem, cpu, therm = (snap["fan"], snap["temps"], snap["mem"],
@@ -594,11 +741,30 @@ class FanMonitorApp(App):
         self._render_proc_table()
 
     def action_kill_selected(self) -> None:
+        focused = self.focused
+        on_ai = isinstance(focused, DataTable) and focused.id == "ai-actions"
+        if on_ai and self._ai_toggled:
+            labels, pids = [], []
+            for i in sorted(self._ai_toggled):
+                a = self._ai_actions[i]
+                labels.append(a.label)
+                for p in a.pids:
+                    if p not in pids:
+                        pids.append(p)
+            label = f"{len(labels)} AI actions: " + ", ".join(labels)
+            if len(label) > 60:
+                label = label[:57] + "…"
+            self._pending_kill = (label, pids)
+            self._kill_origin_ai = True
+            self.push_screen(ConfirmKill(label, pids), self._do_kill)
+            return
         target = self._kill_target()
         if target is None:
             self.notify("focus a process table first", severity="warning")
             return
         label, pids = target
+        self._pending_kill = (label, pids)
+        self._kill_origin_ai = on_ai
         self.push_screen(ConfirmKill(label, pids), self._do_kill)
 
     def _kill_target(self):
@@ -611,17 +777,36 @@ class FanMonitorApp(App):
         if not (0 <= idx < len(rows)):
             return None
         r = rows[idx]
+        if r is None:
+            return None
         if isinstance(r, Rec):
             return r.label, list(r.pids)
         return f"{r.comm} (PID {r.pid})", [r.pid]
 
     def _do_kill(self, confirmed: bool) -> None:
         if not confirmed:
+            self._pending_kill = None
             return
-        target = self._kill_target()
+        target = self._pending_kill
+        self._pending_kill = None
         if target is None:
             return
         label, pids = target
+        sent, missing = self._kill_pids(label, pids)
+        note = f" → {len(missing)} already gone" if missing else ""
+        self.notify(f"SIGTERM sent to {len(sent)} process(es) for {label}{note}",
+                    severity="information")
+        if self._kill_origin_ai and sent:
+            self.set_timer(6.0, lambda: self._arm_verify(label, len(sent)))
+        self._kill_origin_ai = False
+        self._spawn_refresh()
+
+    def _arm_verify(self, label: str, n: int) -> None:
+        self._ai_verify_pending = (label, n)
+        self._spawn_refresh()
+
+    def _kill_pids(self, label: str, pids: list) -> tuple:
+        """SIGTERM each pid; returns (sent, missing)."""
         sent, missing = [], []
         for pid in pids:
             if not _pid_alive(pid):
@@ -634,10 +819,245 @@ class FanMonitorApp(App):
                 missing.append(pid)
             except PermissionError:
                 self.notify(f"no permission for PID {pid}", severity="error")
-        note = f" → {len(missing)} already gone" if missing else ""
-        self.notify(f"SIGTERM sent to {len(sent)} process(es) for {label}{note}",
-                    severity="information")
-        self._spawn_refresh()
+        return sent, missing
+
+    # -- AI harness ---------------------------------------------------------
+
+    def _ai_status_idle(self) -> None:
+        box = self.query_one("#ai-status", Static)
+        cfg = self._ai_cfg
+        if not (cfg and cfg.configured):
+            box.update(Text("not configured — press [A] to set up",
+                            style=brand.MUTED))
+            return
+        last = getattr(self, "_ai_last", "")
+        box.update(Text.assemble(
+            (f"{cfg.provider} · {cfg.model}", brand.MIST),
+            (f"   ·   {last}" if last else "", brand.MUTED)))
+
+    def action_ask_ai(self) -> None:
+        self.query_one("#tabs", TabbedContent).active = "tab-ai"
+        if not (self._ai_cfg and self._ai_cfg.configured):
+            self.notify("AI not configured — press A to set up",
+                        severity="warning")
+            return
+        self._consult(None)
+
+    def action_ai_setup(self) -> None:
+        self.push_screen(AiSetup(self._ai_cfg), self._ai_setup_done)
+
+    def _ai_setup_done(self, saved: bool) -> None:
+        if not saved:
+            return
+        self._ai_cfg = ai_config.load()
+        from .ai.triggers import TriggerMonitor
+        self._ai_trigger = (TriggerMonitor(self._ai_cfg)
+                            if self._ai_cfg and self._ai_cfg.enabled else None)
+        self._ai_status_idle()
+        self.notify("AI harness enabled", severity="information")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id != "ai-input":
+            return
+        q = event.value.strip()
+        event.input.value = ""
+        if not (self._ai_cfg and self._ai_cfg.configured):
+            self.notify("AI not configured — press A to set up",
+                        severity="warning")
+            return
+        self._consult(q)
+
+    def _maybe_verify(self) -> None:
+        """Post-kill verify consult, deferred until no consult is running."""
+        if self._ai_verify_pending is None or self._ai_busy:
+            return
+        label, n = self._ai_verify_pending
+        self._ai_verify_pending = None
+        self._consult(
+            f"I just sent SIGTERM to {label} ({n} processes) on your "
+            f"advice. Here is the new snapshot — did it help, and "
+            f"what's next?",
+            trigger="verify", kind="verifying")
+
+    def _consult(self, question: str | None, trigger: str = "",
+                 kind: str = "asking") -> None:
+        if self._ai_busy:
+            return
+        snap = self._ai_snap
+        if snap is None:
+            return
+        self._ai_busy = True
+        self._ai_kind = kind
+        self._ai_started = time.monotonic()
+        self._ai_last_tool = ""
+        self._ai_timer = self.set_interval(0.5, self._ai_tick)
+        self.query_one("#ai-diagnosis", Static).add_class("stale")
+        self.run_worker(lambda: self._ai_run(snap, question, trigger),
+                        exclusive=True, group="ai", thread=True)
+        self._ai_tick()
+
+    def _ai_tick(self) -> None:
+        el = time.monotonic() - self._ai_started
+        tool = getattr(self, "_ai_last_tool", "")
+        extra = f" (tool: {tool})" if tool else ""
+        verb = "verifying" if self._ai_kind == "verifying" else "thinking"
+        kind = "" if self._ai_kind == "asking" else f" · {self._ai_kind}"
+        self.query_one("#ai-status", Static).update(
+            Text(f"{verb}… {el:.0f}s{kind}{extra}", style=brand.PEACH))
+
+    def _ai_run(self, snap: dict, question: str | None, trigger: str):
+        from .ai.agent import Agent
+        from .ai.context import build_packet
+        from .ai.provider import OpenAICompatProvider
+        from .ai.tools import ToolContext
+        cfg = self._ai_cfg
+        provider = OpenAICompatProvider(cfg.base_url, cfg.model,
+                                        cfg.key_source)
+        ctx = ToolContext(engine=self.engine, snap=snap)
+        agent = Agent(provider, cfg)
+        agent.on_tool = lambda name: setattr(self, "_ai_last_tool", name)
+        d = agent.diagnose(build_packet(snap), ctx, question,
+                           self._ai_history)
+        d.trigger = trigger
+        return d
+
+    def _ai_worker_done(self, event: Worker.StateChanged) -> None:
+        if event.state not in (WorkerState.SUCCESS, WorkerState.ERROR):
+            return
+        if not self._ai_busy:
+            return
+        self._ai_busy = False
+        if self._ai_timer is not None:
+            self._ai_timer.stop()
+            self._ai_timer = None
+        status = self.query_one("#ai-status", Static)
+        cfg = self._ai_cfg
+        when = time.strftime("%H:%M")
+        if event.state == WorkerState.ERROR:
+            status.update(Text(
+                f"{cfg.provider} · {cfg.model} · error: "
+                f"{event.worker.error}", style=brand.CORAL))
+            return
+        d = event.worker.result
+        if d is None:
+            return
+        kind = "" if self._ai_kind == "asking" else f" · {self._ai_kind}"
+        self._ai_last = f"last consult {when}{kind}"
+        if d.error:
+            status.update(Text.assemble(
+                (f"{cfg.provider} · {cfg.model}", brand.MIST),
+                (f"   ·   {self._ai_last}", brand.MUTED),
+                (f"   ·   error: {d.error}", brand.CORAL)))
+        else:
+            self._ai_status_idle()
+        self._render_diagnosis(d)
+        self._maybe_verify()
+
+    def _render_diagnosis(self, d) -> None:
+        box = self.query_one("#ai-diagnosis", Static)
+        box.remove_class("stale")
+        t = Text()
+        t.append("🤖  ", style=brand.PEACH)
+        t.append(d.text or "(no diagnosis)", style=f"bold {brand.MIST}")
+        t.append(f"\nconfidence {d.confidence:.0%} · {d.elapsed_s:.0f}s · "
+                 f"tools: {', '.join(d.tool_calls_made) or 'none'}",
+                 style=brand.MUTED)
+        box.update(t)
+        table = self.query_one("#ai-actions", DataTable)
+        table.clear()
+        self._ai_toggled = set()
+        self._ai_actions = list(d.actions)
+        rows = []
+        for i, a in enumerate(d.actions):
+            pids = ", ".join(map(str, a.pids[:6]))
+            if len(a.pids) > 6:
+                pids += f" …+{len(a.pids) - 6}"
+            table.add_row(str(i + 1), "", a.type,
+                          Text(a.label[:22], style=brand.MIST),
+                          pids or "—",
+                          Text(a.why, style=brand.MUTED), key=str(i))
+            if a.type == "close" and a.pids:
+                rows.append(Rec(label=a.label, category="",
+                                rss_mb=0, cpu_pct=0, age_h=0,
+                                pids=list(a.pids), reason=a.why))
+            else:
+                rows.append(None)
+        for note in d.dropped:
+            table.add_row("", "", Text("dropped", style=brand.MUTED), note,
+                          "", "", key=f"drop-{len(rows)}")
+            rows.append(None)
+        self._rows["ai-actions"] = rows
+        self.query_one("#ai-why", Static).update(
+            Text(d.actions[0].why if d.actions else "", style=brand.MUTED))
+        fu = self.query_one("#ai-followups", OptionList)
+        fu.clear_options()
+        self._ai_followups = list(d.follow_ups[:4])
+        for i, q in enumerate(self._ai_followups):
+            fu.add_option(Option(q, id=str(i)))
+        fu.display = bool(self._ai_followups)
+        fu.highlighted = 0 if self._ai_followups else None
+
+    # -- AI tab interaction -------------------------------------------------
+
+    def action_ai_toggle(self) -> None:
+        focused = self.focused
+        if not (isinstance(focused, DataTable)
+                and focused.id == "ai-actions"):
+            return
+        idx = focused.cursor_row
+        if not (0 <= idx < len(self._ai_actions)):
+            return
+        a = self._ai_actions[idx]
+        if a.type != "close" or not a.pids:
+            self.notify("only close actions can be toggled",
+                        severity="warning")
+            return
+        if idx in self._ai_toggled:
+            self._ai_toggled.discard(idx)
+            mark = ""
+        else:
+            self._ai_toggled.add(idx)
+            mark = "✓"
+        focused.update_cell(str(idx), self._ai_col_keys[1],
+                            Text(mark, style=f"bold {brand.PEACH}"))
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id != "ai-actions":
+            return
+        idx = event.cursor_row
+        if not (0 <= idx < len(self._ai_actions)):
+            return
+        a = self._ai_actions[idx]
+        if a.type == "close":
+            self.action_ai_toggle()
+        elif a.type in ("investigate", "wait"):
+            if not (self._ai_cfg and self._ai_cfg.configured):
+                return
+            pids = ", ".join(map(str, a.pids)) or "none"
+            self._consult(
+                f"Investigate {a.label} (PIDs {pids}) using your tools "
+                f"(proc_detail, process_tree, recent_logs) and tell me "
+                f"what it is doing and whether I should wait or close it.",
+                kind=f"investigating {a.label}")
+
+    def on_data_table_row_highlighted(self,
+                                      event: DataTable.RowHighlighted) -> None:
+        if event.data_table.id != "ai-actions":
+            return
+        idx = event.cursor_row
+        why = (self._ai_actions[idx].why
+               if 0 <= idx < len(self._ai_actions) else "")
+        self.query_one("#ai-why", Static).update(Text(why, style=brand.MUTED))
+
+    def on_option_list_option_selected(
+            self, event: OptionList.OptionSelected) -> None:
+        if event.option_list.id != "ai-followups":
+            return
+        idx = event.option_index
+        if 0 <= idx < len(self._ai_followups):
+            q = self._ai_followups[idx]
+            if self._ai_cfg and self._ai_cfg.configured:
+                self._consult(q)
 
 
 # --- helpers --------------------------------------------------------------
