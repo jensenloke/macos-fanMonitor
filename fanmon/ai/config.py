@@ -33,6 +33,11 @@ class TriggerConfig:
 
 
 @dataclass
+class UpdateConfig:
+    auto: bool = True
+
+
+@dataclass
 class AiConfig:
     enabled: bool = True
     provider: str = "openai-compatible"
@@ -42,6 +47,7 @@ class AiConfig:
     max_tool_rounds: int = 6
     cooldown_s: int = 300
     triggers: TriggerConfig = field(default_factory=TriggerConfig)
+    update: UpdateConfig = field(default_factory=UpdateConfig)
 
     @property
     def configured(self) -> bool:
@@ -71,6 +77,10 @@ def load(path: str | None = None) -> AiConfig | None:
     for k in TriggerConfig.__dataclass_fields__:
         if k in trg:
             setattr(cfg.triggers, k, trg[k])
+    upd = raw.get("update", {})
+    for k in UpdateConfig.__dataclass_fields__:
+        if k in upd:
+            setattr(cfg.update, k, upd[k])
     return cfg
 
 
@@ -94,6 +104,9 @@ def save(cfg: AiConfig, path: str | None = None) -> str:
     lines += ["", "[triggers]"]
     for k in TriggerConfig.__dataclass_fields__:
         lines.append(f"{k} = {_toml_val(getattr(cfg.triggers, k))}")
+    lines += ["", "[update]"]
+    for k in UpdateConfig.__dataclass_fields__:
+        lines.append(f"{k} = {_toml_val(getattr(cfg.update, k))}")
     lines.append("")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:

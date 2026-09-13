@@ -40,6 +40,7 @@ through the CPU, Processes, and Watchdog tabs.
 
 ## Contents
 
+- [Quick start](#quick-start)
 - [Demo](#demo)
 - [What it shows](#what-it-shows)
 - [MacBook Air (no fan)](#macbook-air-no-fan)
@@ -48,8 +49,18 @@ through the CPU, Processes, and Watchdog tabs.
 - [Run & keys](#run)
 - [Data sources](#data-sources-all-read-only)
 - [Why not Docker](#why-a-native-cli-instead-of-docker)
+- [Updates](#updates)
 - [Documentation](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/index.md) — getting started, user guide, algorithm, roadmap, and more
 - [Contributing](https://github.com/jensenloke/macos-fanMonitor/blob/main/CONTRIBUTING.md)
+
+## Quick start
+
+1. `pipx install macos-fanmon` (or `pipx upgrade macos-fanmon` if you have it)
+2. `fm` — look around; `q` quits
+3. Optional AI second opinion:
+   `fm ai providers` → `fm ai setup --from-omp <name>`
+   (or `--base-url … --model … --key-source env:VAR|none`)
+   → `fm ai test --tools` → `fm`, press `a`.
 
 ## What it shows
 
@@ -140,6 +151,9 @@ pipx install macos-fanmon     # one command; fm lands on your PATH
 (No pipx? `brew install pipx`, or from a clone: `./install.sh` builds a venv
 and links `fm` into `~/.local/bin` — make sure that is on your `PATH`.)
 
+**Upgrade:** `pipx upgrade macos-fanmon`; from a clone, `fm update`.
+`fm` also keeps itself up to date automatically — see [Updates](#updates).
+
 ## Run
 
 ```bash
@@ -227,6 +241,23 @@ qwen3:8b --key-source none` for Ollama, or `--key-source env:OPENAI_API_KEY`
 for OpenAI. Verify with `fm ai status` and `fm ai test --tools`. Keys are
 never stored — `key_source` is a pointer, not a secret. Privacy and details:
 [docs → AI harness](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/ai.md).
+
+## Updates
+
+`fm` checks PyPI at most every 12h from a background thread (never blocking
+launch). When a newer release is known, the next launch prints
+`fm: updating …`, upgrades itself (`git pull --ff-only` + deps for clones,
+`pipx upgrade` / `pip install -U` otherwise), and re-execs. If anything fails
+it warns once and launches the current version anyway.
+
+Opt out three ways:
+
+- `fm update --off` — writes `[update] auto = false` to the config file
+- `FANMON_NO_UPDATE=1` — disables everything for that environment
+- no config needed at all: only the 12h background check runs
+
+Manual control: `fm update` checks and upgrades now; `fm update --check`
+prints current / latest / install method; `fm update --on` re-enables.
 
 ## Documentation
 

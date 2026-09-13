@@ -18,10 +18,10 @@ once:
 	@./fm --once
 
 test:
-	@$(PY) smoke_test.py
+	@FANMON_NO_UPDATE=1 $(PY) smoke_test.py
 
 test-unit:
-	@$(PY) -m unittest discover -s tests
+	@FANMON_NO_UPDATE=1 $(PY) -m unittest discover -s tests
 
 docs:
 	@$(VENV)/bin/mkdocs serve

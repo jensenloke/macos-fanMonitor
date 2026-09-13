@@ -91,6 +91,9 @@ key_source = "omp:dgx"        # omp:<name> | env:<VAR> | none (no key)
 max_tool_rounds = 6
 cooldown_s = 300
 
+[update]
+auto = true                 # fm self-updates on launch when PyPI is newer
+
 [triggers]
 fan_duty_pct = 70
 throttle_pct = 30

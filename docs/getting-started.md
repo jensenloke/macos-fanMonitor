@@ -95,6 +95,13 @@ fm --once | head        # dashboard renders, fan/temp/swap lines present
 ./.venv/bin/python smoke_test.py   # headless TUI test → "SMOKE OK"
 ```
 
+## Updates
+
+`fm` keeps itself current: a background check against PyPI (≤ every 12h) and,
+if a newer release is known, a self-upgrade on the next launch. Manual control:
+`fm update`, `fm update --check`, `fm update --off`; `FANMON_NO_UPDATE=1`
+disables it entirely.
+
 ## Optional: AI harness
 
 `fm` works fully without it. If you want an LLM second opinion (an "AI" tab,

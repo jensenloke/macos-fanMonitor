@@ -22,6 +22,7 @@ async def run_once(fanless: bool) -> bool:
         os.environ.pop("FANMON_THROTTLE", None)
         os.environ.pop("FANMON_NO_ANIM", None)
     os.environ["FANMON_AI_CONFIG"] = "/tmp/fm-nonexistent-ai-config.toml"
+    os.environ["FANMON_NO_UPDATE"] = "1"
     print(f"=== mode: {'fanless (Air)' if fanless else 'fan'} ===")
 
     app = FanMonitorApp(interval=1.0)

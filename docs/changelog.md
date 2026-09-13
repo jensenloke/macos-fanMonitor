@@ -4,6 +4,20 @@ All notable changes to `fm` are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] — 2026-09-13
+
+### Added
+
+- **Automatic self-update** — a background PyPI check (≤ every 12h, daemon
+  thread, never blocks launch); when a newer release is cached, the next
+  launch upgrades in place (`git pull --ff-only` for clones, `pipx upgrade` /
+  `pip install -U` otherwise) and re-execs. Failures warn once and launch the
+  current version. Opt out via `fm update --off`, `FANMON_NO_UPDATE=1`, or the
+  `[update] auto = false` config table; `fm update` / `fm update --check` give
+  manual control. The TUI notifies once when an update is pending.
+- **Quick start / Updates docs**; `install.sh` now fails fast on Python <3.11,
+  honours `PYTHON=`, and prints the `fm ai` setup hint.
+
 ## [0.3.1] — 2026-09-13
 
 ### Added

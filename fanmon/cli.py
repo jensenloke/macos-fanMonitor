@@ -209,6 +209,41 @@ def _ai_cmd(args, console: Console) -> int:
     return 0
 
 
+def _update_cmd(args, console: Console) -> int:
+    from . import update
+    if args.off or args.on:
+        from .ai import config as ai_config
+        cfg = ai_config.load() or ai_config.AiConfig()
+        cfg.update.auto = bool(args.on)
+        ai_config.save(cfg)
+        console.print(f"auto-update {'on' if args.on else 'off'}"
+                      f" ({ai_config.default_path()})")
+        return 0
+    method = update.detect_install()
+    if args.check:
+        latest = update.check_latest()
+        console.print(f"current  {update.__version__}")
+        console.print(f"latest   {latest or 'unreachable'}")
+        console.print(f"method   {method}")
+        console.print(f"auto     {'on' if update._auto_enabled() else 'off'}")
+        return 0 if latest else 2
+    latest = update.check_latest()
+    if not latest:
+        console.print("[red]could not reach PyPI[/]")
+        return 2
+    if not update.is_newer(latest, update.__version__):
+        console.print(f"fm is up to date ({update.__version__})")
+        return 0
+    console.print(f"fm: updating {update.__version__} → {latest}…")
+    ok, log = update.run_upgrade(method)
+    if ok:
+        console.print(f"fm: updated to {latest} — re-run `fm`")
+        return 0
+    console.print(f"[red]update failed: "
+                  f"{log.strip().splitlines()[-1][:120] if log.strip() else '?'}[/]")
+    return 2
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="fm",
@@ -257,11 +292,21 @@ def main(argv=None):
                     help="also verify a tool-call round-trip")
     aisub.add_parser("enable")
     aisub.add_parser("disable")
+    up = sub.add_parser("update", help="check for / apply a newer fm release")
+    up.add_argument("--check", action="store_true",
+                    help="print current / latest / install method")
+    up.add_argument("--off", action="store_true", help="disable auto-update")
+    up.add_argument("--on", action="store_true", help="enable auto-update")
     args = ap.parse_args(argv)
 
     console = Console()
     if args.cmd == "ai":
         return _ai_cmd(args, console)
+    if args.cmd == "update":
+        return _update_cmd(args, console)
+
+    from . import update as _update
+    _update.launch_check(console.print)
     if args.once:
         return _run_once(console, args.warmup, ai=args.ai or bool(args.ask),
                          ask=args.ask)

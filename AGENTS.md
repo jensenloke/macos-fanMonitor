@@ -34,5 +34,7 @@ overrides the path (use a `/tmp` path for tests — never touch a real config).
 - Never send `Proc.command` (full argv) to the provider — the packet carries
   `comm` + category only.
 - No new runtime dependencies without asking; stdlib only for the AI layer.
+- `fm` self-updates on launch; `fm update` controls it, and
+  `FANMON_NO_UPDATE=1` disables it — set it in test environments.
 
 See [docs/ai.md](docs/ai.md) for the full setup/privacy/tool reference.

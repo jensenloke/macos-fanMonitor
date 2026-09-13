@@ -379,6 +379,14 @@ class FanMonitorApp(App):
         self.register_theme(brand.textual_theme())
         self.theme = "abc"
         self._setup_tables()
+        from . import update as _update
+        cache = _update.read_cache()
+        if cache and cache.latest and _update.is_newer(cache.latest,
+                                                       _update.__version__):
+            hint = ("will update on next launch"
+                    if _update._auto_enabled() else "run `fm update`")
+            self.notify(f"fm {cache.latest} available — {hint}",
+                        severity="information")
         if self.animate_brand:
             self._boot_screen = BrandBoot()
             self._boot_started = time.monotonic()
