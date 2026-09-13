@@ -4,7 +4,7 @@ All notable changes to `fm` are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [0.3.1] — Unreleased
+## [0.3.1] — 2026-09-13
 
 ### Added
 
@@ -19,7 +19,7 @@ All notable changes to `fm` are documented here. The format follows
 - **`key_source = "none"`** for key-less local providers (Ollama, LM Studio);
   the Authorization header is then omitted.
 
-## [0.3.0] — Unreleased
+## [0.3.0] — 2026-09-13
 
 ### Added
 
