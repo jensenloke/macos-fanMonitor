@@ -4,7 +4,22 @@ All notable changes to `fm` are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.1] — Unreleased
+
+### Added
+
+- **Interactive AI tab** — `space` toggles `close` actions for a batch kill,
+  `enter` runs `investigate`/`wait` rows as tool-using follow-up consults,
+  quick-reply follow-up questions are selectable options, and a post-kill
+  "verifying…" consult checks whether the advice helped. All kills still go
+  through the same human-confirmed prompt.
+- **`fm ai …` subcommands** — `providers` (omp + Ollama + LM Studio
+  detection), `setup` (scriptable config writer, `--from-omp`, `--force`
+  guarded), `status`, `test [--tools]`, `enable`/`disable`.
+- **`key_source = "none"`** for key-less local providers (Ollama, LM Studio);
+  the Authorization header is then omitted.
+
+## [0.3.0] — Unreleased
 
 ### Added
 

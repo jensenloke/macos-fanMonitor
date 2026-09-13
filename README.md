@@ -147,6 +147,12 @@ fm                    # interactive TUI
 fm --once             # single snapshot frame, then exit (for scripts / quick look)
 fm --interval 3       # live refresh every 3s
 fm --no-anim          # skip the animated ABC boot screen
+fm --once --ai        # snapshot + AI diagnosis panel (once configured)
+
+fm ai providers       # list omp / Ollama / LM Studio providers
+fm ai setup --from-omp dgx    # or --base-url … --model … --key-source …
+fm ai status          # parsed config + key state (never prints keys)
+fm ai test [--tools]  # chat round-trip, optionally tool-call round-trip
 ```
 
 ### Keys (TUI)
@@ -213,7 +219,14 @@ threshold triggers (fan duty, throttle, memory, swap, consecutive `high`
 verdicts) can auto-consult too. The AI only ever *recommends*: close actions
 land as rows you select and confirm through the same `k` → confirm → `SIGTERM`
 path. `fm --once --ai [--ask "question"]` prints the snapshot plus the
-diagnosis. Privacy and details: [docs → AI harness](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/ai.md).
+diagnosis.
+
+Shell setup works too — `fm ai providers` lists what's reachable, then e.g.
+`fm ai setup --from-omp dgx`, or `--base-url http://localhost:11434/v1 --model
+qwen3:8b --key-source none` for Ollama, or `--key-source env:OPENAI_API_KEY`
+for OpenAI. Verify with `fm ai status` and `fm ai test --tools`. Keys are
+never stored — `key_source` is a pointer, not a secret. Privacy and details:
+[docs → AI harness](https://github.com/jensenloke/macos-fanMonitor/blob/main/docs/ai.md).
 
 ## Documentation
 

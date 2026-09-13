@@ -25,7 +25,9 @@ class OpenAICompatProvider:
         self.model = model
         self.key_source = key_source
 
-    def chat(self, messages: list, tools: list) -> dict:
+    def chat(self, messages: list, tools: list,
+             max_tokens: int = MAX_TOKENS,
+             tool_choice="auto") -> dict:
         """One round-trip; returns the assistant message dict."""
         try:
             key = resolve_api_key(self.key_source)
@@ -34,19 +36,19 @@ class OpenAICompatProvider:
         body = {
             "model": self.model,
             "messages": messages,
-            "tool_choice": "auto",
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": max_tokens,
             "reasoning_effort": "low",
         }
         if tools:
             body["tools"] = tools
+            body["tool_choice"] = tool_choice
+        headers = {"Content-Type": "application/json"}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions",
             data=json.dumps(body).encode(),
-            headers={
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
             method="POST",
         )
         try:

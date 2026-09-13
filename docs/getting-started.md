@@ -95,4 +95,18 @@ fm --once | head        # dashboard renders, fan/temp/swap lines present
 ./.venv/bin/python smoke_test.py   # headless TUI test → "SMOKE OK"
 ```
 
+## Optional: AI harness
+
+`fm` works fully without it. If you want an LLM second opinion (an "AI" tab,
+`a` to consult, threshold triggers), set it up from the shell:
+
+```bash
+fm ai providers      # see what's reachable
+fm ai setup --from-omp dgx        # or --base-url … --model … --key-source …
+fm ai test --tools   # verify chat + tool calling
+```
+
+Details, privacy notes, and examples for Ollama / LM Studio / OpenAI:
+[AI harness](ai.md).
+
 You're set. Next up: [User Guide](user-guide.md).

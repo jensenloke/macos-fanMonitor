@@ -11,9 +11,75 @@ deterministic recommendations.
 
 ## Setup
 
+### 30-second path
+
 Press **`A`** in the TUI. The wizard lists providers detected in
 `~/.omp/agent/models.yml` (e.g. `dgx`), prefills the endpoint and first model,
-and writes `~/.config/macos-fanMonitor/config.toml`:
+and writes `~/.config/macos-fanMonitor/config.toml`.
+
+### From the shell
+
+`fm ai <cmd>` does everything without opening the TUI — handy on a fresh
+install or when an agent is configuring it for you:
+
+```bash
+fm ai providers    # what's available: omp providers, Ollama, LM Studio
+fm ai setup …      # writes config.toml (refuses to overwrite; --force to redo)
+fm ai status       # parsed config + whether the key resolves (never prints it)
+fm ai test         # one chat round-trip; --tools also verifies tool calling
+fm ai disable|enable
+```
+
+Worked examples:
+
+```bash
+# OMP harness (key read from ~/.omp/agent/models.yml at runtime)
+fm ai setup --from-omp dgx
+
+# Ollama — model must support tool calling (e.g. qwen3, llama3.1)
+fm ai setup --base-url http://localhost:11434/v1 \
+            --model qwen3:8b --key-source none
+
+# LM Studio (served model with tool support)
+fm ai setup --base-url http://localhost:1234/v1 \
+            --model your-model-id --key-source none
+
+# OpenAI — key stays in your environment, never in the file
+export OPENAI_API_KEY=…
+fm ai setup --base-url https://api.openai.com/v1 \
+            --model gpt-4o-mini --key-source env:OPENAI_API_KEY
+```
+
+Tuning goes on the same line:
+`--fan-duty 70 --throttle 30 --mem 90 --swap 70 --high-samples 3
+--cooldown 300 --max-tool-rounds 6`.
+
+### Verify
+
+```bash
+fm ai status       # exit 0 when configured; shows thresholds, key state
+fm ai test         # "OK · <model> · <latency>s"
+fm ai test --tools # also proves tool-call round-trips work
+fm --once --ai     # snapshot + AI diagnosis panel
+```
+
+### Setting up with an AI agent
+
+An agent can configure this end-to-end from the shell. Copy-paste block:
+
+```text
+Set up the fm AI harness:
+1. `fm ai providers` — pick a reachable provider.
+2. `fm ai setup --from-omp <name>` if an omp provider exists, else
+   `fm ai setup --base-url <url> --model <id> --key-source env:<VAR>`
+   (or `--key-source none` for Ollama/LM Studio).
+3. `fm ai status` then `fm ai test --tools` — both must exit 0.
+RULES: never paste an API key into config.toml — use env:<VAR>; never use
+--force on an existing config unless I asked; do not modify
+~/.omp/agent/models.yml.
+```
+
+The config file itself:
 
 ```toml
 [ai]
@@ -21,7 +87,7 @@ enabled = true
 provider = "openai-compatible"
 base_url = "https://…/v1"
 model = "dgx-current"
-key_source = "omp:dgx"        # omp:<name> reads models.yml; env:<VAR> an env var
+key_source = "omp:dgx"        # omp:<name> | env:<VAR> | none (no key)
 max_tool_rounds = 6
 cooldown_s = 300
 

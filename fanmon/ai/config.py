@@ -144,7 +144,9 @@ def omp_providers(path: str | None = None) -> dict:
 
 
 def resolve_api_key(key_source: str) -> str:
-    """Resolve "omp:<provider>" or "env:<VAR>" to a key. Never logs it."""
+    """Resolve "omp:<provider>", "env:<VAR>" or "none" to a key."""
+    if key_source == "none":
+        return ""
     if key_source.startswith("env:"):
         var = key_source[4:]
         key = os.environ.get(var, "")
@@ -157,7 +159,7 @@ def resolve_api_key(key_source: str) -> str:
         if not key:
             raise KeyError(f"no apiKey for omp provider '{name}'")
         return key
-    raise KeyError("key_source must be omp:<provider> or env:<VAR>")
+    raise KeyError("key_source must be omp:<provider>, env:<VAR> or none")
 
 
 def _omp_key(provider: str, path: str | None = None) -> str:
